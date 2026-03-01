@@ -6,6 +6,8 @@ import { generateHabitInsight } from "@/lib/ai";
 import { calculateStreak, calculateCompletionRate } from "@/lib/utils";
 import { format, subDays } from "date-fns";
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/insights - Get user's AI insights
 export async function GET(req: NextRequest) {
   try {

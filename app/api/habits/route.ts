@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { format, parseISO } from "date-fns";
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/habits - List user habits with today's logs
 export async function GET(req: NextRequest) {
   try {

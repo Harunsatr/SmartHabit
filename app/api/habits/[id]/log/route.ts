@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { format, parseISO } from "date-fns";
 
+export const dynamic = 'force-dynamic'
+
 // POST /api/habits/[id]/log - Toggle habit completion for a date
 export async function POST(
   req: NextRequest,
