@@ -29,13 +29,14 @@ function LoginForm() {
         email: form.email,
         password: form.password,
         redirect: false,
+        callbackUrl: callbackUrl,
       });
 
       if (result?.error) {
         setError("Invalid email or password. Please try again.");
-      } else {
-        router.push(callbackUrl);
-        router.refresh();
+      } else if (result?.ok) {
+        // Use window.location for full page reload to ensure cookies are set
+        window.location.href = callbackUrl;
       }
     } catch {
       setError("Something went wrong. Please try again.");
