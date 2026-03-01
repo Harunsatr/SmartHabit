@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import {
   Zap,
   CheckCircle2,
@@ -97,7 +99,9 @@ const testimonials = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await getServerSession(authOptions);
+  
   return (
     <div className="min-h-screen bg-background">
       {/* Navbar */}
@@ -110,16 +114,27 @@ export default function HomePage() {
             <span className="font-bold text-foreground">SmartHabit</span>
           </Link>
           <div className="flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" size="sm">
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button variant="gradient" size="sm">
-                Get Started
-              </Button>
-            </Link>
+            {session ? (
+              <Link href="/dashboard">
+                <Button variant="gradient" size="sm">
+                  Go to Dashboard
+                  <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost" size="sm">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button variant="gradient" size="sm">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -151,22 +166,35 @@ export default function HomePage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/register">
-              <Button variant="gradient" size="xl" className="gap-2">
-                Get Started Free
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button variant="outline" size="xl">
-                Sign In
-              </Button>
-            </Link>
+            {session ? (
+              <Link href="/dashboard">
+                <Button variant="gradient" size="xl" className="gap-2">
+                  Go to Dashboard
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/register">
+                  <Button variant="gradient" size="xl" className="gap-2">
+                    Get Started Free
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link href="/login">
+                  <Button variant="outline" size="xl">
+                    Sign In
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
-          <p className="text-xs text-muted-foreground mt-4">
-            Free to use · No credit card required
-          </p>
+          {!session && (
+            <p className="text-xs text-muted-foreground mt-4">
+              Free to use · No credit card required
+            </p>
+          )}
         </div>
       </section>
 
