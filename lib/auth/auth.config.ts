@@ -8,7 +8,7 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { AUTH_CONSTANTS } from "./constants";
 import { authenticateUser } from "./auth.server";
-import type { JWTPayload, SessionUser } from "./auth.types";
+import type { JWTPayload, SessionUser, UserRole } from "./auth.types";
 
 export const authOptions: NextAuthOptions = {
   // Use JWT for stateless sessions (Vercel serverless compatible)
@@ -102,9 +102,9 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.sub = user.id; // Subject (user ID)
         token.id = user.id;
-        token.email = user.email;
-        token.role = user.role;
-        token.language = user.language;
+        token.email = user.email || "";
+        token.role = (user.role as unknown as UserRole) || "USER";
+        token.language = (user.language as string) || "en";
       }
 
       return token as JWTPayload;
@@ -118,7 +118,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user && token) {
         // Add custom properties from JWT to session
         session.user.id = (token.id as string) || token.sub || "";
-        session.user.role = (token.role as string) || "USER";
+        session.user.role = ((token.role as unknown as UserRole) || "USER") as UserRole;
         session.user.language = (token.language as string) || "en";
       }
 
@@ -128,6 +128,6 @@ export const authOptions: NextAuthOptions = {
 };
 
 /**
- * Export for use in middleware and API routes
+ * Export default for easier imports
  */
 export default authOptions;

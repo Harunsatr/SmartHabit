@@ -120,7 +120,7 @@ export async function authenticateUser(
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: UserRole;
   language: string;
 } | null> {
   // Validate credentials format
@@ -149,9 +149,18 @@ export async function authenticateUser(
     const isValid = await comparePassword(credentials.password, user.password);
     if (!isValid) return null;
 
-    // Return user without password
+    // Return user without password and ensure role typing
     const { password: _, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    return {
+      ...userWithoutPassword,
+      role: userWithoutPassword.role as UserRole,
+    } as {
+      id: string;
+      name: string;
+      email: string;
+      role: UserRole;
+      language: string;
+    };
   } catch {
     // Prevent information leakage
     return null;

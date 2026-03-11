@@ -1,5 +1,5 @@
 import NextAuth from "next-auth";
-import { default as authOptions } from "@/lib/auth";
+import authOptions from "@/lib/auth";
 
 // Force dynamic rendering in Vercel serverless environment
 export const dynamic = "force-dynamic";

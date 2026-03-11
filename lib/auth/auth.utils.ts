@@ -6,7 +6,7 @@
 
 import bcrypt from "bcryptjs";
 import { AUTH_CONSTANTS } from "./constants";
-import type { AuthCredentials, AuthError } from "./auth.types";
+import type { AuthCredentials, AuthError, UserRole } from "./auth.types";
 
 /**
  * Hash password with bcrypt
@@ -133,7 +133,7 @@ export function getSafeUser(user: {
     id: user.id,
     email: user.email,
     name: user.name,
-    role: user.role,
+    role: (user.role as unknown as UserRole) || "USER",
     language: user.language,
     createdAt: user.createdAt,
   };

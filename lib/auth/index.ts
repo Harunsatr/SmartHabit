@@ -3,12 +3,13 @@
  * Clean API for importing auth utilities
  */
 
-// Configuration
-export { authOptions as default, authOptions } from "./auth.config";
+// Configuration (default export for NextAuth)
+import authConfig from "./auth.config";
+export default authConfig;
+export { authOptions } from "./auth.config";
 
 // Types
 export type {
-  UserRole,
   AuthUser,
   SafeUser,
   AuthCredentials,
@@ -17,6 +18,7 @@ export type {
   SessionUser,
   AuthError,
 } from "./auth.types";
+// Export the UserRole enum (value + type) explicitly
 export { UserRole } from "./auth.types";
 
 // Constants

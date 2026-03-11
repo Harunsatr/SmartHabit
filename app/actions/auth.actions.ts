@@ -13,9 +13,9 @@ import {
   validateCredentials,
   validatePassword,
   sanitizeEmail,
-  AUTH_CONSTANTS,
-} from "@/lib/auth";
-import type { AuthResponse, AuthCredentials } from "@/lib/auth";
+} from "@/lib/auth/auth.utils";
+import { AUTH_CONSTANTS } from "@/lib/auth/constants";
+import type { AuthResponse, AuthCredentials } from "@/lib/auth/auth.types";
 
 /**
  * Server action: User login
