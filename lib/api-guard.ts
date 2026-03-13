@@ -1,1 +1,106 @@
-/**\n * API Guard - Reusable authentication guard for API routes\n * Provides consistent auth checks across all API endpoints\n */\n\nimport { NextResponse, NextRequest } from \"next/server\";\nimport { getServerSession } from \"next-auth\";\nimport { authOptions } from \"@/lib/auth\";\nimport type { UserRole } from \"@/lib/auth\";\n\n/**\n * Response types for guard functions\n */\ntype GuardResponse<T = any> = {\n  success: boolean;\n  status: number;\n  data?: T;\n  error?: string;\n};\n\n/**\n * API Guard: Verify user is authenticated\n * Use at the beginning of any protected API route\n * @returns Guard response with session data or null\n */\nexport async function guardAuth(\n  request?: NextRequest\n): Promise<GuardResponse<{ userId: string; email: string; role: UserRole }>> {\n  try {\n    const session = await getServerSession(authOptions);\n\n    if (!session || !session.user?.id) {\n      return {\n        success: false,\n        status: 401,\n        error: \"Unauthorized: Not authenticated\",\n      };\n    }\n\n    return {\n      success: true,\n      status: 200,\n      data: {\n        userId: session.user.id,\n        email: session.user.email || \"\",\n        role: session.user.role,\n      },\n    };\n  } catch (error) {\n    console.error(\"[guardAuth] Error:\", error);\n    return {\n      success: false,\n      status: 500,\n      error: \"Internal server error\",\n    };\n  }\n}\n\n/**\n * API Guard: Verify user is admin\n * Use for admin-only API routes\n * @returns Guard response with admin user data or null\n */\nexport async function guardAdmin(\n  request?: NextRequest\n): Promise<GuardResponse<{ userId: string; email: string }>> {\n  const authGuard = await guardAuth(request);\n\n  if (!authGuard.success) {\n    return authGuard;\n  }\n\n  if (authGuard.data?.role !== \"ADMIN\") {\n    return {\n      success: false,\n      status: 403,\n      error: \"Forbidden: Admin access required\",\n    };\n  }\n\n  return {\n    success: true,\n    status: 200,\n    data: {\n      userId: authGuard.data.userId,\n      email: authGuard.data.email,\n    },\n  };\n}\n\n/**\n * API Guard: Verify user can access specific resource\n * Use for user-owned data protection\n * @param resourceUserId - User ID of the resource owner\n * @returns Guard response or null\n */\nexport async function guardUserAccess(\n  resourceUserId: string,\n  request?: NextRequest\n): Promise<GuardResponse> {\n  const authGuard = await guardAuth(request);\n\n  if (!authGuard.success) {\n    return authGuard;\n  }\n\n  // Allow if user owns the resource or is admin\n  if (\n    authGuard.data?.userId === resourceUserId ||\n    authGuard.data?.role === \"ADMIN\"\n  ) {\n    return { success: true, status: 200 };\n  }\n\n  return {\n    success: false,\n    status: 403,\n    error: \"Forbidden: Cannot access this resource\",\n  };\n}\n\n/**\n * Create error response for API\n * Consistent error response format\n */\nexport function errorResponse(\n  error: string,\n  status: number = 400\n): NextResponse {\n  return NextResponse.json({ error }, { status });\n}\n\n/**\n * Create success response for API\n * Consistent success response format\n */\nexport function successResponse(\n  data: any,\n  status: number = 200\n): NextResponse {\n  return NextResponse.json(data, { status });\n}\n\n/**\n * Example usage in API route:\n *\n * ```typescript\n * import { guardAdmin, successResponse, errorResponse } from '@/lib/api-guard';\n *\n * export async function GET(request: NextRequest) {\n *   const guard = await guardAdmin(request);\n *   if (!guard.success) {\n *     return errorResponse(guard.error!, guard.status);\n *   }\n *\n *   // Your protected endpoint logic here\n *   const data = await fetchAdminData();\n *   return successResponse(data);\n * }\n * ```\n */\n
+import { NextResponse, NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import type { UserRole } from '@/lib/auth';
+
+type GuardResponse<T = any> = {
+  success: boolean;
+  status: number;
+  data?: T;
+  error?: string;
+};
+
+export async function guardAuth(
+  request?: NextRequest
+): Promise<GuardResponse<{ userId: string; email: string; role: UserRole }>> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user?.id) {
+      return {
+        success: false,
+        status: 401,
+        error: 'Unauthorized: Not authenticated',
+      };
+    }
+
+    return {
+      success: true,
+      status: 200,
+      data: {
+        userId: session.user.id,
+        email: session.user.email || '',
+        role: session.user.role,
+      },
+    };
+  } catch (error) {
+    console.error('[guardAuth] Error:', error);
+    return {
+      success: false,
+      status: 500,
+      error: 'Internal server error',
+    };
+  }
+}
+
+export async function guardAdmin(
+  request?: NextRequest
+): Promise<GuardResponse<{ userId: string; email: string }>> {
+  const authGuard = await guardAuth(request);
+
+  if (!authGuard.success) {
+    return authGuard;
+  }
+
+  if (authGuard.data?.role !== 'ADMIN') {
+    return {
+      success: false,
+      status: 403,
+      error: 'Forbidden: Admin access required',
+    };
+  }
+
+  return {
+    success: true,
+    status: 200,
+    data: {
+      userId: authGuard.data.userId,
+      email: authGuard.data.email,
+    },
+  };
+}
+
+export async function guardUserAccess(
+  resourceUserId: string,
+  request?: NextRequest
+): Promise<GuardResponse> {
+  const authGuard = await guardAuth(request);
+
+  if (!authGuard.success) {
+    return authGuard;
+  }
+
+  if (
+    authGuard.data?.userId === resourceUserId ||
+    authGuard.data?.role === 'ADMIN'
+  ) {
+    return { success: true, status: 200 };
+  }
+
+  return {
+    success: false,
+    status: 403,
+    error: 'Forbidden: Cannot access this resource',
+  };
+}
+
+export function errorResponse(
+  error: string,
+  status: number = 400
+): NextResponse {
+  return NextResponse.json({ error }, { status });
+}
+
+export function successResponse(data: any, status: number = 200): NextResponse {
+  return NextResponse.json(data, { status });
+}

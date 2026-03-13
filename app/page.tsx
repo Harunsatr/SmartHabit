@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
-import { signOut } from "next-auth/react";
 import { authOptions } from "@/lib/auth";
 import {
   Zap,
@@ -15,7 +14,6 @@ import {
   Target,
   Sparkles,
   Star,
-  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
