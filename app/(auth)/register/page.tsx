@@ -53,7 +53,16 @@ export default function RegisterPage() {
       });
 
       if (result?.ok) {
-        router.push("/dashboard");
+        // Wait a moment for the session to be updated
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Fetch session to get user role
+        const sessionResponse = await fetch("/api/auth/session");
+        const sessionData = await sessionResponse.json();
+        
+        // Redirect based on user role (new users are typically USER role)
+        const redirectUrl = sessionData?.user?.role === "ADMIN" ? "/admin" : "/dashboard";
+        router.push(redirectUrl);
         router.refresh();
       }
     } catch {

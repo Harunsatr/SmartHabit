@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = searchParams.get("callbackUrl");
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -25,20 +25,65 @@ function LoginForm() {
     setLoading(true);
 
     try {
+      // Attempt sign in with credentials
       const result = await signIn("credentials", {
         email: form.email,
         password: form.password,
         redirect: false,
-        callbackUrl: callbackUrl,
       });
 
       if (result?.error) {
+        console.error("[Login] Sign in error:", result.error);
         setError("Invalid email or password. Please try again.");
-      } else if (result?.ok) {
-        // Use window.location for full page reload to ensure cookies are set
-        window.location.href = callbackUrl;
+        setLoading(false);
+        return;
       }
-    } catch {
+
+      if (result?.ok) {
+        // Wait for session cookie to be properly set
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        try {
+          // Fetch session to determine redirect URL
+          const sessionResponse = await fetch("/api/auth/session", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            cache: "no-store",
+          });
+
+          if (!sessionResponse.ok) {
+            throw new Error("Failed to fetch session");
+          }
+
+          const session = await sessionResponse.json();
+          console.log("[Login] Session data:", { role: session?.user?.role });
+
+          // Determine redirect URL based on user role
+          let redirectUrl = "/dashboard"; // default for regular users
+
+          if (session?.user?.role === "ADMIN") {
+            redirectUrl = "/admin";
+          } else if (callbackUrl && callbackUrl.startsWith("/") && callbackUrl !== "/login") {
+            redirectUrl = callbackUrl;
+          }
+
+          console.log("[Login] Redirecting to:", redirectUrl);
+
+          // Use router.push for client-side navigation to maintain session
+          router.push(redirectUrl);
+        } catch (sessionError) {
+          console.error("[Login] Session fetch error:", sessionError);
+          // Fallback: try to determine role from result and redirect
+          const defaultUrl = callbackUrl?.startsWith("/") ? callbackUrl : "/dashboard";
+          router.push(defaultUrl);
+        }
+      } else {
+        setError("Login failed. Please check your credentials and try again.");
+      }
+    } catch (error) {
+      console.error("[Login] Unexpected error:", error);
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);

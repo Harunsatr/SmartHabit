@@ -8,10 +8,19 @@ import { NextResponse } from "next/server";
 import type { NextRequestWithAuth } from "next-auth/middleware";
 
 // Define public routes (no auth required)
-const PUBLIC_ROUTES = new Set(["/", "/login", "/register"]);
+const PUBLIC_ROUTES = ["/", "/login", "/register"];
 
 // Define admin routes (requires ADMIN role)
-const ADMIN_ROUTES = new Set(["/admin"]);
+const ADMIN_ROUTES = ["/admin"];
+
+// Define protected dashboard routes
+const DASHBOARD_ROUTES = [
+  "/dashboard",
+  "/habits",
+  "/analytics",
+  "/insights",
+  "/settings",
+];
 
 export default withAuth(
   function middleware(req: NextRequestWithAuth) {
@@ -22,28 +31,47 @@ export default withAuth(
      * PUBLIC ROUTES
      * Allow access without authentication
      */
-    if (PUBLIC_ROUTES.has(pathname)) {
+    if (PUBLIC_ROUTES.includes(pathname)) {
       // If user is already logged in, redirect away from login/register
       if ((pathname === "/login" || pathname === "/register") && token) {
-        return NextResponse.redirect(new URL("/dashboard", req.url));
+        // Redirect based on role
+        const redirectUrl = token?.role === "ADMIN" ? "/admin" : "/dashboard";
+        return NextResponse.redirect(new URL(redirectUrl, req.url));
       }
       return NextResponse.next();
     }
 
     /**
-     * PROTECTED ROUTES
-     * Require authentication (checked by withAuth callback below)
-     */
-
-    /**
      * ADMIN ROUTES
-     * Require ADMIN role
+     * Require ADMIN role exclusively
      */
     if (pathname.startsWith("/admin")) {
-      // Check if user is admin
-      if (token?.role !== "ADMIN") {
-        // Redirect non-admin to dashboard
+      if (!token) {
+        // Not authenticated - redirect to login with callback
+        return NextResponse.redirect(
+          new URL("/login?callbackUrl=/admin&error=unauthorized", req.url)
+        );
+      }
+
+      if (token.role !== "ADMIN") {
+        // Authenticated but not admin - redirect to dashboard
+        console.warn(
+          `[Middleware] Non-admin user (${token.email}) attempted to access /admin`
+        );
         return NextResponse.redirect(new URL("/dashboard", req.url));
+      }
+    }
+
+    /**
+     * DASHBOARD ROUTES
+     * Require authentication
+     */
+    if (DASHBOARD_ROUTES.some((route) => pathname.startsWith(route))) {
+      if (!token) {
+        // Not authenticated - redirect to login
+        return NextResponse.redirect(
+          new URL(`/login?callbackUrl=${pathname}&error=unauthorized`, req.url)
+        );
       }
     }
 
@@ -56,8 +84,8 @@ export default withAuth(
        * withAuth only calls this for matcher routes
        */
       authorized: ({ token }) => {
-        // Allow if token exists
-        return !!token;
+        // Allow if token exists (middleware will do detailed checks)
+        return !!token || true; // Allow to pass; detailed checks in middleware
       },
     },
   }
@@ -70,16 +98,16 @@ export default withAuth(
  */
 export const config = {
   matcher: [
-    // Protected dashboard routes
+    // Auth pages (for redirect logic)
+    "/login",
+    "/register",
+    // Dashboard routes
     "/dashboard/:path*",
     "/habits/:path*",
     "/analytics/:path*",
     "/insights/:path*",
     "/settings/:path*",
-    // Admin routes
+    // Admin routes (CRITICAL - must be protected)
     "/admin/:path*",
-    // Redirect authenticated users away from auth pages
-    "/login",
-    "/register",
   ],
 };

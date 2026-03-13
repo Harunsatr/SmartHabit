@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
+import { signOut } from "next-auth/react";
 import { authOptions } from "@/lib/auth";
 import {
   Zap,
@@ -14,10 +15,12 @@ import {
   Target,
   Sparkles,
   Star,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { LogoutButton } from "@/components/LogoutButton";
 
 const features = [
   {
@@ -115,12 +118,18 @@ export default async function HomePage() {
           </Link>
           <div className="flex items-center gap-3">
             {session ? (
-              <Link href="/dashboard">
-                <Button variant="gradient" size="sm">
-                  Go to Dashboard
-                  <ArrowRight className="h-4 w-4 ml-1" />
-                </Button>
-              </Link>
+              <>
+                <span className="text-sm text-muted-foreground">
+                  {session.user?.name || session.user?.email}
+                </span>
+                <Link href={session.user?.role === 'ADMIN' ? '/admin' : '/dashboard'}>
+                  <Button variant="gradient" size="sm">
+                    {session.user?.role === 'ADMIN' ? 'Admin Dashboard' : 'Go to Dashboard'}
+                    <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </Link>
+                <LogoutButton />
+              </>
             ) : (
               <>
                 <Link href="/login">
@@ -139,64 +148,120 @@ export default async function HomePage() {
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden py-20 sm:py-28">
-        {/* Background decoration */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-gradient-to-b from-indigo-500/10 to-purple-500/5 blur-3xl" />
-        </div>
+      {/* Welcome Section for Logged-in Users */}
+      {session ? (
+        <section className="py-20 sm:py-28 bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5 border-b">
+          <div className="container mx-auto max-w-4xl px-4">
+            <div className="text-center">
+              <div className="inline-flex items-center gap-2 mb-4">
+                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                  {session.user?.name?.[0]?.toUpperCase() || 'U'}
+                </div>
+                <div className="text-left">
+                  <h2 className="text-2xl font-bold text-foreground">
+                    Welcome back, {session.user?.name || session.user?.email}!
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {session.user?.role === 'ADMIN' ? '🛡️ Admin' : '👤 User'} Account
+                  </p>
+                </div>
+              </div>
 
-        <div className="container mx-auto max-w-4xl px-4 text-center">
-          <Badge variant="secondary" className="mb-4 gap-1.5 px-3 py-1">
-            <Sparkles className="h-3 w-3 text-indigo-500" />
-            AI-Powered Habit Intelligence
-          </Badge>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+                {session.user?.role === 'ADMIN'
+                  ? 'You have admin access. Manage users, analytics, and system settings.'
+                  : 'Ready to build better habits? Head to your dashboard and start tracking!'}
+              </p>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground mb-6">
-            Tracker Smart Habit
-            <span className="block bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
-              For All Your Activities
-            </span>
-          </h1>
-
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
-            Build better habits with AI that understands your lifestyle. Track,
-            analyze, and receive personalized recommendations to transform your
-            daily routine.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            {session ? (
-              <Link href="/dashboard">
-                <Button variant="gradient" size="xl" className="gap-2">
-                  Go to Dashboard
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            ) : (
-              <>
-                <Link href="/register">
-                  <Button variant="gradient" size="xl" className="gap-2">
-                    Get Started Free
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Link
+                  href={session.user?.role === 'ADMIN' ? '/admin' : '/dashboard'}
+                >
+                  <Button variant="gradient" size="lg" className="gap-2">
+                    {session.user?.role === 'ADMIN' ? 'Go to Admin Dashboard' : 'Go to Dashboard'}
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
-                <Link href="/login">
-                  <Button variant="outline" size="xl">
-                    Sign In
-                  </Button>
-                </Link>
-              </>
-            )}
+                {session.user?.role !== 'ADMIN' && (
+                  <Link href="/habits">
+                    <Button variant="outline" size="lg">
+                      View My Habits
+                    </Button>
+                  </Link>
+                )}
+              </div>
+
+              {/* User Info Card */}
+              <div className="mt-12 bg-background/50 border rounded-lg p-6 max-w-md mx-auto">
+                <div className="space-y-3 text-left">
+                  <div className="flex justify-between items-center pb-3 border-b">
+                    <span className="text-sm text-muted-foreground">Email</span>
+                    <span className="font-medium">{session.user?.email}</span>
+                  </div>
+                  <div className="flex justify-between items-center pb-3 border-b">
+                    <span className="text-sm text-muted-foreground">User Type</span>
+                    <Badge variant={session.user?.role === 'ADMIN' ? 'default' : 'secondary'}>
+                      {session.user?.role === 'ADMIN' ? 'Administrator' : 'Regular User'}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Language</span>
+                    <span className="font-medium capitalize">{session.user?.language || 'en'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* Hero - Only show if not logged in */}
+      {!session && (
+        <section className="relative overflow-hidden py-20 sm:py-28">
+          {/* Background decoration */}
+          <div className="absolute inset-0 -z-10">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-gradient-to-b from-indigo-500/10 to-purple-500/5 blur-3xl" />
           </div>
 
-          {!session && (
+          <div className="container mx-auto max-w-4xl px-4 text-center">
+            <Badge variant="secondary" className="mb-4 gap-1.5 px-3 py-1">
+              <Sparkles className="h-3 w-3 text-indigo-500" />
+              AI-Powered Habit Intelligence
+            </Badge>
+
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground mb-6">
+              Tracker Smart Habit
+              <span className="block bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
+                For All Your Activities
+              </span>
+            </h1>
+
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
+              Build better habits with AI that understands your lifestyle. Track,
+              analyze, and receive personalized recommendations to transform your
+              daily routine.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link href="/register">
+                <Button variant="gradient" size="xl" className="gap-2">
+                  Get Started Free
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="/login">
+                <Button variant="outline" size="xl">
+                  Sign In
+                </Button>
+              </Link>
+            </div>
+
             <p className="text-xs text-muted-foreground mt-4">
               Free to use · No credit card required
             </p>
-          )}
-        </div>
-      </section>
+          </div>
+        </section>
+      )}
 
       {/* Features */}
       <section className="py-16 sm:py-20">

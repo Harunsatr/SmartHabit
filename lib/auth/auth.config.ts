@@ -113,16 +113,40 @@ export const authOptions: NextAuthOptions = {
     /**
      * Session callback: Called whenever session is accessed
      * Enriches session with data from token
+     * CRITICAL: Must properly pass role to client
      */
     async session({ session, token }) {
       if (session.user && token) {
         // Add custom properties from JWT to session
         session.user.id = (token.id as string) || token.sub || "";
-        session.user.role = ((token.role as unknown as UserRole) || "USER") as UserRole;
+        // IMPORTANT: Ensure role is properly set
+        session.user.role = ((token.role as UserRole) || "USER") as UserRole;
         session.user.language = (token.language as string) || "en";
+        
+        // Debug logging (remove in production)
+        if (process.env.NODE_ENV === "development") {
+          console.log("[Session] User session:", {
+            userId: session.user.id,
+            role: session.user.role,
+            email: session.user.email,
+          });
+        }
       }
 
       return session as { user: SessionUser; expires: string };
+    },
+
+    /**
+     * Redirect callback: Handles post-login redirects
+     * Routes users based on their role
+     */
+    async redirect({ url, baseUrl }) {
+      // Allow redirects to relative URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Allow redirects to same origin
+      else if (new URL(url).origin === baseUrl) return url;
+      
+      return baseUrl;
     },
   },
 };
